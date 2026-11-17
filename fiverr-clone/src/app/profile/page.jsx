@@ -1,15 +1,46 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function ProfilePage() {
-  // Tạo state mẫu để quản lý thông tin user trước khi kết nối API
   const [userInfo, setUserInfo] = useState({
     name: 'Đỗ Hoàng Phúc',
     email: 'phuc.do@example.com',
     phone: '0901234567',
     skill: ['ReactJS', 'Next.js', 'Tailwind CSS', 'Node.js'],
     bio: 'Sinh viên CNTT trường Đại học Công nghiệp TPHCM (IUH), đam mê lập trình web full-stack.',
+    avatar: 'https://via.placeholder.com/150'
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        // Lấy token đăng nhập từ localStorage (hoặc chỗ nhóm bạn lưu token)
+        const token = localStorage.getItem('token') || '';
+        
+        // Gọi API lấy thông tin người dùng từ Swagger hệ thống
+        const response = await fetch('https://fiverrnew.cybersoft.edu.vn/api/users', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'tokenCybersoft': 'TOKEN_CYBERSOFT_CỦA_BẠN', // Nhớ thay token Cybersoft nếu nhóm có dùng
+            'Authorization': `Bearer ${token}`
+          },
+        });
+
+        const result = await response.json();
+        if (response.ok && result.content) {
+          setUserInfo(result.content);
+        }
+      } catch (error) {
+        console.error('Lỗi khi gọi API profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -20,7 +51,7 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="w-32 h-32 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 border-2 border-green-500">
           <img 
-            src="https://via.placeholder.com/150" 
+            src={userInfo.avatar || "https://via.placeholder.com/150"} 
             alt="User Avatar" 
             className="w-full h-full object-cover"
           />
@@ -43,7 +74,7 @@ export default function ProfilePage() {
           <div>
             <strong className="block text-gray-700 mb-2">Kỹ năng:</strong>
             <div className="flex flex-wrap gap-2">
-              {userInfo.skill.map((item, index) => (
+              {userInfo.skill && userInfo.skill.map((item, index) => (
                 <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium border border-gray-200">
                   {item}
                 </span>
