@@ -11,29 +11,48 @@ export default function ProfilePage() {
     avatar: 'https://via.placeholder.com/150'
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Lấy token đăng nhập từ localStorage (hoặc chỗ nhóm bạn lưu token)
+        // Lấy token và thông tin user đã lưu khi đăng nhập thành công từ localStorage
         const token = localStorage.getItem('token') || '';
-        
-        // Gọi API lấy thông tin người dùng từ Swagger hệ thống
-        const response = await fetch('https://fiverrnew.cybersoft.edu.vn/api/users', {
+        const userLocalStorage = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = userLocalStorage.id || userLocalStorage._id;
+
+        // Nếu có userId, gọi đúng endpoint /api/users/{id} theo Swagger của Cybersoft
+        const endpoint = userId 
+          ? `https://fiverrnew.cybersoft.edu.vn/api/users/${userId}`
+          : 'https://fiverrnew.cybersoft.edu.vn/api/users';
+
+        const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'tokenCybersoft': 'TOKEN_CYBERSOFT_CỦA_BẠN', // Nhớ thay token Cybersoft nếu nhóm có dùng
+            'tokenCybersoft': 'YOUR_TOKEN_CYBERSOFT', // Nhớ thay bằng token Cybersoft nhóm cung cấp
             'Authorization': `Bearer ${token}`
           },
         });
 
         const result = await response.json();
+        
         if (response.ok && result.content) {
-          setUserInfo(result.content);
+          setUserInfo({
+            name: result.content.name || result.content.hoTen,
+            email: result.content.email,
+            phone: result.content.phone || result.content.soDt,
+            skill: result.content.skill || ['ReactJS', 'Next.js', 'Tailwind CSS'],
+            bio: result.content.bio || 'Sinh viên CNTT trường Đại học Công nghiệp TPHCM (IUH).',
+            avatar: result.content.avatar || 'https://via.placeholder.com/150'
+          });
+        } else {
+          // Fallback nếu API yêu cầu token hợp lệ nhưng chưa đăng nhập
+          console.warn('API phản hồi chưa hợp lệ, dùng dữ liệu mẫu tạm thời.');
         }
-      } catch (error) {
-        console.error('Lỗi khi gọi API profile:', error);
+      } catch (err) {
+        console.error('Lỗi kết nối API Swagger:', err);
+        setError('Không thể kết nối đến máy chủ API.');
       } finally {
         setLoading(false);
       }
@@ -51,7 +70,7 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="w-32 h-32 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 border-2 border-green-500">
           <img 
-            src={userInfo.avatar || "https://via.placeholder.com/150"} 
+            src={userInfo.avatar} 
             alt="User Avatar" 
             className="w-full h-full object-cover"
           />
